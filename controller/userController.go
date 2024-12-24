@@ -110,7 +110,7 @@ func GetUser() gin.HandlerFunc {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 
 		userId := c.Param("user_id")
-		fmt.Println("hello",userId)
+		fmt.Println("hello the user Id is", userId)
 
 		var user models.User
 
@@ -186,93 +186,89 @@ func SignUp() gin.HandlerFunc {
 	}
 }
 
-func Login() gin.HandlerFunc{
-	return func(c *gin.Context){
-		var ctx,cancel = context.WithTimeout(context.Background(),100*time.Second)
+func Login() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 
 		var user models.User
 		var foundUser models.User
 
 		defer cancel()
-		if err := c.BindJSON(&user);err != nil{
-			c.JSON(http.StatusBadRequest,gin.H{"error":err.Error()})
+		if err := c.BindJSON(&user); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
-		err := userCollection.FindOne(ctx,bson.M{"email":user.Email}).Decode(&foundUser)
+		err := userCollection.FindOne(ctx, bson.M{"email": user.Email}).Decode(&foundUser)
 
-		if err != nil{
-			c.JSON(http.StatusBadRequest, gin.H{"error":"user not found"})
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "user not found"})
 		}
 
+		passwordIsValid, msg := VerifyPassword(*user.Password, *foundUser.Password)
 
-		passwordIsValid, msg := VerifyPassword(*user.Password,*foundUser.Password)
-
-		if passwordIsValid != true{
-			c.JSON(http.StatusInternalServerError,gin.H{"error":msg})
+		if passwordIsValid != true {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
 			return
 		}
 
-		token, referehToken, _ := helpers.GenerateAllTokens(foundUser.Email,foundUser.User_name,foundUser.User_id)
+		token, referehToken, _ := helpers.GenerateAllTokens(foundUser.Email, foundUser.User_name, foundUser.User_id)
 
-		helpers.UpdateAllTokens(token,referehToken,foundUser.User_id)
+		helpers.UpdateAllTokens(token, referehToken, foundUser.User_id)
 
 		defer cancel()
 
-		c.JSON(http.StatusOK,foundUser)
+		c.JSON(http.StatusOK, foundUser)
 	}
 }
 
-func UpdateUser() gin.HandlerFunc{
-	return func(c *gin.Context){
-		var ctx,cancel = context.WithTimeout(context.Background(),100*time.Second)
+func UpdateUser() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 
 		var user models.User
 		userId := c.Param("user_id")
-		fmt.Printf(userId);
+		fmt.Printf(userId)
 
-		if err := c.BindJSON(&user); err != nil{
-			c.JSON(http.StatusBadRequest,err.Error())
+		if err := c.BindJSON(&user); err != nil {
+			c.JSON(http.StatusBadRequest, err.Error())
 			return
 		}
 
-		filter := bson.M{"user_id":userId}
-		
+		filter := bson.M{"user_id": userId}
+
 		var updateObj primitive.D
-		
-			updateObj = append(updateObj, bson.E{"avatar",user.Avatar})
-			updateObj = append(updateObj, bson.E{"city",user.City})
-			updateObj = append(updateObj, bson.E{"categories",user.Categories})
-		
+
+		updateObj = append(updateObj, bson.E{"avatar", user.Avatar})
+		updateObj = append(updateObj, bson.E{"city", user.City})
+		updateObj = append(updateObj, bson.E{"categories", user.Categories})
+
 		user.Updated_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 		updateObj = append(updateObj, bson.E{"updated_at", user.Updated_at})
 
 		upsert := true
-		
+
 		opt := options.UpdateOptions{
-			Upsert:&upsert,
+			Upsert: &upsert,
 		}
 
-		result,err := userCollection.UpdateOne(
+		result, err := userCollection.UpdateOne(
 			ctx,
 			filter,
 			bson.D{
-				{"$set",updateObj},
+				{"$set", updateObj},
 			},
 			&opt,
 		)
 
-		if err != nil{
-			c.JSON(http.StatusInternalServerError,gin.H{"error":"User not Updated"})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "User not Updated"})
 			return
 		}
 
 		defer cancel()
 
-
-		c.JSON(http.StatusOK,result)
-
-
+		c.JSON(http.StatusOK, result)
 
 	}
 }
@@ -287,15 +283,101 @@ func HashPassword(password string) string {
 	return string(bytes)
 }
 
-func VerifyPassword(userPassword, providedPassword string) (bool,string){
+func VerifyPassword(userPassword, providedPassword string) (bool, string) {
 	err := bcrypt.CompareHashAndPassword([]byte(providedPassword), []byte(userPassword))
 	check := true
 	msg := ""
 
-	if err != nil{
+	if err != nil {
 		msg = fmt.Sprintf("login or password is incorrect")
 		check = false
 	}
 
-	return check,msg
+	return check, msg
 }
+
+
+
+// func GetEnrollUser() gin.HandlerFunc {
+// 	return func(c *gin.Context) {
+// 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
+// 		defer cancel()
+
+// 		eventId := c.Param("event_id")
+// 		recordPerPage, err := strconv.Atoi(c.Query("recordPerPage"))
+// 		if err != nil || recordPerPage < 1 {
+// 			recordPerPage = 10
+// 		}
+
+// 		page, err1 := strconv.Atoi(c.Query("page"))
+// 		if err1 != nil || page < 1 {
+// 			page = 1
+// 		}
+
+// 		skip := (page - 1) * recordPerPage
+
+// 		// Access the "enroll" collection
+// 		var EnrollCollection *mongo.Collection = database.OpenCollection(database.Client, eventId, "enroll")
+
+// 		// Step 1: Fetch enrolled users from the Enroll collection
+// 		var enrolledUsers []Enroll
+
+// 		cursor, err := EnrollCollection.Find(ctx, bson.M{}, options.Find().
+// 			SetSkip(int64(skip)).
+// 			SetLimit(int64(recordPerPage)))
+// 		if err != nil {
+// 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error getting enrolled users"})
+// 			return
+// 		}
+
+// 		if err := cursor.All(ctx, &enrolledUsers); err != nil {
+// 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error decoding enrolled users data"})
+// 			return
+// 		}
+
+// 		// Extract the list of user IDs and create a map for the approved status
+// 		var userIds []string
+// 		approvedMap := make(map[string]bool)
+
+// 		for _, enrolledUser := range enrolledUsers {
+// 			userIds = append(userIds, enrolledUser.User_id)
+// 			approvedMap[enrolledUser.User_id] = enrolledUser.Approved
+// 		}
+
+// 		// Step 2: Fetch user details from the "users" collection
+// 		var users []User
+// 		var result []map[string]interface{}
+
+// 		if len(userIds) > 0 {
+// 			cursor, err = userCollection.Find(ctx, bson.M{"user_id": bson.M{"$in": userIds}})
+// 			if err != nil {
+// 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Error fetching user details"})
+// 				return
+// 			}
+
+// 			if err := cursor.All(ctx, &users); err != nil {
+// 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Error decoding user data"})
+// 				return
+// 			}
+
+// 			// Prepare the output data
+// 			for _, user := range users {
+// 				output := map[string]interface{}{
+// 					"user_name": user.User_name,
+// 					"email":     user.Email,
+// 					"avatar":    user.Avatar,
+// 					"approved":  approvedMap[user.User_id],
+// 				}
+// 				result = append(result, output)
+// 			}
+// 		}
+
+// 		// Step 3: Respond with the filtered data
+// 		c.JSON(http.StatusOK, gin.H{
+// 			"page":         page,
+// 			"record_count": len(result),
+// 			"users":        result,
+// 		})
+// 	}
+// }
+

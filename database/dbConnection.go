@@ -37,8 +37,13 @@ func Dbinstance() *mongo.Client {
 var Client *mongo.Client = Dbinstance()
 
 
-func OpenCollection(client *mongo.Client, collectionName string) *mongo.Collection{
-	var collection *mongo.Collection = client.Database("event").Collection(collectionName)
+func OpenCollection(client *mongo.Client, collectionName string, dbName ...string) *mongo.Collection {
+	// Use "event" as the default database name if none is provided
+	database := "event"
+	if len(dbName) > 0 && dbName[0] != "" {
+		database = dbName[0]
+	}
 
+	var collection *mongo.Collection = client.Database(database).Collection(collectionName)
 	return collection
 }
