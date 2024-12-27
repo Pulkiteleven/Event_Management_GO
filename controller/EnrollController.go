@@ -16,6 +16,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+var EnrollCollection *mongo.Collection = database.OpenCollection(database.Client, "enroll")
+
+
 func EnrollUser() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
@@ -35,9 +38,10 @@ func EnrollUser() gin.HandlerFunc {
 			return
 		}
 
-		var EnrollCollection *mongo.Collection = database.OpenCollection(database.Client, enroll.Event_id, "enroll")
 
-		count, err := EnrollCollection.CountDocuments(ctx, bson.M{"user_id": enroll.User_id})
+		count, err := EnrollCollection.CountDocuments(ctx, bson.M{
+			"user_id": enroll.User_id,
+			"event_id":enroll.Event_id})
 		defer cancel()
 
 		if err != nil {
@@ -79,7 +83,7 @@ func ApprovedUser() gin.HandlerFunc {
 		userId := c.Param("user_id")
 		eventId := c.Param("event_id")
 
-		filter := bson.M{"user_id": userId}
+		filter := bson.M{"user_id": userId,"event_id":eventId}
 
 		var updateObj primitive.D
 		updateObj = append(updateObj, bson.E{"approved", true})
@@ -91,8 +95,6 @@ func ApprovedUser() gin.HandlerFunc {
 		opt := options.UpdateOptions{
 			Upsert: &usert,
 		}
-
-		var EnrollCollection *mongo.Collection = database.OpenCollection(database.Client, eventId, "enroll")
 
 		result, err := EnrollCollection.UpdateOne(
 			ctx,
@@ -133,9 +135,7 @@ func GetEnrollUser() gin.HandlerFunc {
 
 		skip := (page - 1) * recordPerPage
 
-		var EnrollCollection *mongo.Collection = database.OpenCollection(database.Client,eventId,"enroll")
-
-		cursor, err := EnrollCollection.Find(ctx,bson.M{},options.Find().
+		cursor, err := EnrollCollection.Find(ctx,bson.M{"event_id":eventId},options.Find().
 		SetSkip(int64(skip)).
 		SetLimit(int64(recordPerPage)))
 

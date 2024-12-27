@@ -9,5 +9,6 @@ import (
 func EventRoutes(ginEngine *gin.Engine){
 	ginEngine.POST("/events",controller.CreateEvent())
 	ginEngine.GET("/events",controller.GetEvents())
+	ginEngine.GET("/events/:user_id",controller.GetUserEnrolledEvents())
 }
 

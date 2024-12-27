@@ -16,6 +16,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+var AttendanceCollection *mongo.Collection = database.OpenCollection(database.Client,"attendance")
+
+
 func MarkAttendance() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
@@ -38,10 +41,9 @@ func MarkAttendance() gin.HandlerFunc {
 		startOfDay := time.Now().Truncate(24 * time.Hour)
 		endOfDay := startOfDay.Add(24 * time.Hour)
 
-		var AttendanceCollection *mongo.Collection = database.OpenCollection(database.Client, attendance.Event_id, "attendance")
-		var EnrollCollection *mongo.Collection = database.OpenCollection(database.Client,attendance.Event_id,"enroll")
 		enrollCount, err := EnrollCollection.CountDocuments(ctx,bson.M{
 			"user_id":attendance.User_id,
+			"event_id":attendance.Event_id,
 		})
 		defer cancel()
 
@@ -57,6 +59,7 @@ func MarkAttendance() gin.HandlerFunc {
 
 		count, err := AttendanceCollection.CountDocuments(ctx, bson.M{
 			"user_id": attendance.User_id,
+			"event_id":attendance.Event_id,
 			"attendance_date": bson.M{
 				"$gte": startOfDay, // Greater than or equal to the start of the day
 				"$lt":  endOfDay,   // Less than the start of the next day
@@ -116,9 +119,8 @@ func GetAttendance() gin.HandlerFunc {
 
 		skip := (page - 1) * recordPerPage
 
-		var AttendanceCollection *mongo.Collection = database.OpenCollection(database.Client, eventId, "attendance")
 
-		cursor, err := AttendanceCollection.Find(ctx,bson.M{},options.Find().
+		cursor, err := AttendanceCollection.Find(ctx,bson.M{"event_id":eventId},options.Find().
 		SetSkip(int64(skip)).
 		SetLimit(int64(recordPerPage)))
 
