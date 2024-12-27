@@ -12,7 +12,8 @@ import (
 
 func Dbinstance() *mongo.Client {
 	// MongoDb := "mongodb://localhost:27017/"
-	MongoDb := "mongodb+srv://pulkitdubey1220:mZCFtKiiK2WODCdj@pulkit.9jagb.mongodb.net/"
+	// MongoDb := "mongodb+srv://pulkitdubey1220:mZCFtKiiK2WODCdj@pulkit.9jagb.mongodb.net/"
+	MongoDb := "mongodb+srv://pulkitdubey1220:mZCFtKiiK2WODCdj@pulkit.9jagb.mongodb.net/?retryWrites=true&w=majority&appName=Pulkit"
 	fmt.Println(MongoDb)
 
 	client,err := mongo.NewClient(options.Client().ApplyURI(MongoDb))
