@@ -7,7 +7,7 @@ import (
 )
 
 func EnrollRoutes(GinEngine *gin.Engine){
-	GinEngine.POST("Enroll",controller.EnrollUser())
-	GinEngine.PATCH("Enroll/:user_id/:event_id",controller.ApprovedUser())
-	GinEngine.GET("Enroll/:event_id",controller.GetEnrollUser())
+	GinEngine.POST("enroll",controller.EnrollUser())
+	GinEngine.PATCH("enroll/:user_id/:event_id",controller.ApprovedUser())
+	GinEngine.GET("enroll/:event_id",controller.GetEnrollUser())
 }
