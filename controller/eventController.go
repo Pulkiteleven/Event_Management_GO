@@ -21,40 +21,49 @@ var eventCollection *mongo.Collection = database.OpenCollection(database.Client,
 func CreateEvent() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
 
 		var event models.Event
-
 		if err := c.BindJSON(&event); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			defer cancel()
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input: " + err.Error()})
 			return
 		}
 
-		validationErr := validate.Struct(event)
-		if validationErr != nil {
+		// Validate incoming data
+		if validationErr := validate.Struct(event); validationErr != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": validationErr.Error()})
-			defer cancel()
 			return
 		}
 
-		event.Created_at, _ = time.Parse(time.RFC3339, time.Now().Local().Format(time.RFC3339))
-		event.Updated_at, _ = time.Parse(time.RFC3339, time.Now().Local().Format(time.RFC3339))
+		// Parse start and end dates
+		var err error
+		if event.Start, err = time.Parse(time.RFC3339, event.Start.String()); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid start date format"})
+			return
+		}
 
+		if event.End, err = time.Parse(time.RFC3339, event.End.String()); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid end date format"})
+			return
+		}
+
+		// Add metadata
+		event.Created_at = time.Now()
+		event.Updated_at = time.Now()
 		event.ID = primitive.NewObjectID()
 		event.Event_id = event.ID.Hex()
 
-		resultInsertionNumber, inserErr := eventCollection.InsertOne(ctx, event)
-
-		if inserErr != nil {
+		// Insert into MongoDB
+		resultInsertionNumber, insertErr := eventCollection.InsertOne(ctx, event)
+		if insertErr != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Event was not created"})
 			return
 		}
 
-		defer cancel()
-
 		c.JSON(http.StatusOK, resultInsertionNumber)
 	}
 }
+
 
 func GetEvents() gin.HandlerFunc {
 	return func(c *gin.Context) {
