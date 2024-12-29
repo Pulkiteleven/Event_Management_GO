@@ -20,8 +20,8 @@ type Event struct {
 	Approve    bool               `json:"approve"`
 	Link       string             `json:"link"`
 	Multiday   bool               `json:"multiday"`
-	Start      time.Time          `json:"start"`
-	End        time.Time          `json:"end"`
+	Start      string             `json:"start"`
+	End        string             `json:"end"`
 	Created_at time.Time          `json:"created_at"`
 	Updated_at time.Time          `json:"updated_at"`
 	Event_id   string             `json:"event_id"`
