@@ -17,6 +17,7 @@ type Event struct {
 	Venu       string             `json:"venu"`
 	Index      string             `json:"index"`
 	Online     bool               `json:"online"`
+	Approve    bool               `json:"approve"`
 	Link       string             `json:"link"`
 	Multiday   bool               `json:"multiday"`
 	Start      time.Time          `json:"start"`
