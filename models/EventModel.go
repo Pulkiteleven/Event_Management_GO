@@ -15,6 +15,7 @@ type Event struct {
 	Category   string             `json:"category"`
 	City       string             `json:"city"`
 	Venu       string             `json:"venu"`
+	Index      string             `json:"index"`
 	Online     bool               `json:"online"`
 	Link       string             `json:"link"`
 	Multiday   bool               `json:"multiday"`
