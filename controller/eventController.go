@@ -43,6 +43,7 @@ func CreateEvent() gin.HandlerFunc {
 		event.ID = primitive.NewObjectID()
 		event.Event_id = event.ID.Hex()
 		//hello
+		//hey
 
 		resultInsertionNumber, inserErr := eventCollection.InsertOne(ctx, event)
 
